@@ -1,0 +1,390 @@
+openapi: 3.0.3
+info:
+  title: HerdVista
+  version: 0.1.0
+  description: >-
+    Battery-first edge multi-object visual tracking for IoT and mobile edge nodes.
+  x-product-slug: ai-iot-herdvista
+  x-source: ai-in-iot/1808.01356v1/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Nodes
+  - name: Packages
+  - name: Tracks
+  - name: Health
+  - name: Privacy
+paths:
+  /v1/nodes:
+    get:
+      operationId: listNodes
+      tags: [Nodes]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Cursor" }, { $ref: "#/components/parameters/Limit" }]
+      responses:
+        "200":
+          description: Nodes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeEdgeNode" }
+    post:
+      operationId: enrollNode
+      tags: [Nodes]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EdgeNode" }
+      responses:
+        "201":
+          description: Enrolled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeEdgeNode" }
+  /v1/nodes/{nodeId}/power-profile:
+    parameters: [{ name: nodeId, in: path, required: true, schema: { type: string } }]
+    put:
+      operationId: setPowerProfile
+      tags: [Nodes]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PowerProfile" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopePowerProfile" }
+  /v1/packages:
+    get:
+      operationId: listTrackerPackages
+      tags: [Packages]
+      security: [{ BearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Cursor" }, { $ref: "#/components/parameters/Limit" }]
+      responses:
+        "200":
+          description: Packages
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeTrackerPackage" }
+    post:
+      operationId: createTrackerPackage
+      tags: [Packages]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrackerPackage" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeTrackerPackage" }
+  /v1/nodes/{nodeId}/deployments:
+    parameters: [{ name: nodeId, in: path, required: true, schema: { type: string } }]
+    post:
+      operationId: deployTrackerPackage
+      tags: [Packages]
+      security: [{ BearerAuth: [] }, { ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [packageId]
+              properties:
+                packageId: { type: string }
+      responses:
+        "202":
+          description: Deploy accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeTrackerPackage" }
+  /v1/tracks:
+    get:
+      operationId: listTrackEvents
+      tags: [Tracks]
+      security: [{ BearerAuth: [] }, { ApiKeyAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/Cursor" }
+        - { $ref: "#/components/parameters/Limit" }
+        - name: nodeId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tracks
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeTrackEvent" }
+    post:
+      operationId: ingestTrackEvent
+      tags: [Tracks]
+      security: [{ ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrackEvent" }
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeTrackEvent" }
+  /v1/health:
+    get:
+      operationId: listHealthSamples
+      tags: [Health]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/Cursor" }
+        - { $ref: "#/components/parameters/Limit" }
+        - name: nodeId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Health
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeHealthSample" }
+  /v1/privacy/policies:
+    get:
+      operationId: getEdgePrivacyPolicy
+      tags: [Privacy]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: nodeId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopePrivacyPolicy" }
+    put:
+      operationId: updateEdgePrivacyPolicy
+      tags: [Privacy]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PrivacyPolicy" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopePrivacyPolicy" }
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+  schemas:
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId: { type: string }
+        timestamp: { type: string, format: date-time }
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+
+    EdgeNode:
+      type: object
+      required: [id, siteName]
+      properties:
+        id: { type: string }
+        siteName: { type: string }
+        powerMode: { type: string, enum: [max_q, max_n, custom] }
+        minFpsSla: { type: number, format: float }
+    PowerProfile:
+      type: object
+      required: [nodeId, mode]
+      properties:
+        nodeId: { type: string }
+        mode: { type: string, enum: [max_q, max_n, custom] }
+        wattBudget: { type: number, format: float }
+    TrackerPackage:
+      type: object
+      required: [id, name, version, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        version: { type: string }
+        status: { type: string, enum: [draft, ready, deprecated] }
+    TrackEvent:
+      type: object
+      required: [id, nodeId, trackId, confidence]
+      properties:
+        id: { type: string }
+        nodeId: { type: string }
+        trackId: { type: string }
+        confidence: { type: number, format: float }
+        bbox: { type: array, items: { type: number }, minItems: 4, maxItems: 4 }
+        timestamp: { type: string, format: date-time }
+    HealthSample:
+      type: object
+      required: [id, nodeId, watts, fps]
+      properties:
+        id: { type: string }
+        nodeId: { type: string }
+        watts: { type: number, format: float }
+        fps: { type: number, format: float }
+        thermalState: { type: string }
+        timestamp: { type: string, format: date-time }
+    PrivacyPolicy:
+      type: object
+      required: [nodeId, emitRawVideo, purpose]
+      properties:
+        nodeId: { type: string }
+        emitRawVideo: { type: boolean }
+        purpose: { type: string }
+        trackRetentionDays: { type: integer }
+    DataEnvelopeEdgeNode:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/EdgeNode" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeEdgeNode:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/EdgeNode" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    DataEnvelopePowerProfile:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PowerProfile" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopePowerProfile:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/PowerProfile" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    DataEnvelopeTrackerPackage:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/TrackerPackage" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeTrackerPackage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/TrackerPackage" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    DataEnvelopeTrackEvent:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/TrackEvent" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeTrackEvent:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/TrackEvent" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    DataEnvelopeHealthSample:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/HealthSample" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeHealthSample:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/HealthSample" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    DataEnvelopePrivacyPolicy:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PrivacyPolicy" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopePrivacyPolicy:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/PrivacyPolicy" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
